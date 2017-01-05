@@ -6,17 +6,21 @@ class Particle
   color _color;
   float coe1,coe2;
   int time;
-  float wrap_x;
-  float wrap_y;
+  float black_x,black_y;
+
+  float n =5; 
   PVector _startpos = new PVector();
   Particle(float xx,float yy,
            float radius,float red,
            float green,float blue,
-           float alpha,float scale
-           //float rotation,float scale
-           )
+           float alpha,float scale,
+           float num,
+           float coefficient1,
+           float coefficient2,
+           float rot, 
+                    float endxx,float endyy
+          ) 
   {
-    //init(radius,rotation,scale,c);
     _pos.x = xx;
     _pos.y = yy;
     _radius = radius;
@@ -24,28 +28,10 @@ class Particle
     _scl = scale;
     _startpos.x = xx;
     _startpos.y = yy;   //起始位置
-  //  println(_pos);
-    
-    if(_pos.x>width/2&&_pos.y<height/2)   //右上角
-    {coe1 = -0.5;coe2 =0.5;
-     wrap_x = random(0,_pos.x);
-     wrap_y = random(_pos.y,height);}
-    else if(_pos.x>width/2&&_pos.y>height/2)  //右下角
-    {coe1 = -0.5;coe2 =-0.5;
-     wrap_x = random(0,_pos.x);
-     wrap_y = random(0,_pos.y);}
-    else if(_pos.x<width/2&&_pos.y>height/2)   //左下角
-    {coe1 = 0.5;coe2 =-0.5;
-     wrap_x = random(_pos.x,width);
-     wrap_y = random(0,_pos.y);}
-    else                                        //左上角
-    {coe1 = 0.5;coe2 = 0.5;
-     wrap_x = random(_pos.x,width);
-     wrap_y = random(_pos.y,height);}
-     
-     println("_startpos.x"+_startpos.x);
-     println("wrap_x"+wrap_x);
-    
+    n = num;
+    coe1 = coefficient1;
+    coe2 = coefficient2;
+    _rot = rot;
   }
   
   void getTime(int _time)
@@ -53,71 +39,73 @@ class Particle
     time = _time;
     
   }
-  void update()
+  
+  void getNum(float num)
   {
-    //_pos.setMag(_scl);
-    //_pos.x+=millis()/20*1;
-    //_pos.y+=millis()/20*1;
-    _vel.x*=0.98f;
-    _vel.y*=0.98f;
+   // n = num;
+    
+  }
+  void update(int j)
+  {
+    update = true;
+    
+    pushStyle();
+    //fill(_color);
+    fill(brushnew_color.get(j),brushnew_color.get(j+1),
+         brushnew_color.get(j+2),brushnew_color.get(j+3));
+    noStroke();
+    brushend_pos.set(j/2,brushend_pos.get(j/2)+vel.x/80*coe1);
+    brushend_pos.set(j/2+1,brushend_pos.get(j/2+1)+vel.y/100*coe2);
+    ellipse(brushend_pos.get(j/2),brushend_pos.get(j/2+1),_radius,_radius);
+    if(brushend_pos.get(j/2)>=width)
+    {
+      brushend_pos.set(j/2,0);
+      brushend_pos.set(j/2,brushend_pos.get(j/2)-vel.x/100*coe1);
+      brushend_pos.set(j/2+1,brushend_pos.get(j/2+1)-vel.y/100*coe2);
+    }
+    else if(brushend_pos.get(j/2)<=0)
+    {
+      brushend_pos.set(j/2,width);
+      brushend_pos.set(j/2,brushend_pos.get(j/2)-vel.x/100*coe1);
+      brushend_pos.set(j/2+1,brushend_pos.get(j/2+1)-vel.y/100*coe2);
+    }
+    else if(brushend_pos.get(j/2+1)>height)
+    {
+      brushend_pos.set(j/2+1,0);
+      brushend_pos.set(j/2,brushend_pos.get(j/2)-vel.x/100*coe1);
+      brushend_pos.set(j/2+1,brushend_pos.get(j/2+1)-vel.y/100*coe2);
+    }
+    else if(brushend_pos.get(j/2+1)<0)
+    {
+      brushend_pos.set(j/2+1,height);
+      brushend_pos.set(j/2,brushend_pos.get(j/2)-vel.x/100*coe1);
+      brushend_pos.set(j/2+1,brushend_pos.get(j/2+1)-vel.y/100*coe2);
+    }
+    popStyle();
+   // println("endbrush1.x"+endbrush1.x);
     
   }
   
   void draw()
   {
-    //_pos.rotate(_rot);
-   // float xx,yy;
-   float dist_start_posx = abs(_pos.x-_startpos.x);
-   float dist_start_posy = abs(_pos.y-_startpos.y);
-   
-   float dist_end_posx = abs(_pos.x-wrap_x);
-   float dist_end_posy = abs(_pos.y-wrap_y);
-    //while((dist_start_posx<dist_end_posx)&&
-    //       (dist_start_posy<dist_end_posy))
-    while(_pos.x>200)
+    pushStyle();
+    if(!end)
     {
-      pushStyle();
     
     fill(_color);
-    
-    //_pos.x+=coe1*(millis()/100);
-    //_pos.y+=coe2*(millis()/100);
-    _pos.x+=coe1*(time/5);
-    _pos.y+=coe2*(time/5);
-    
-    //println(millis()/1000);
+    _pos.x+=coe1*(time*n)/2;
+    _pos.y+=coe2*(time*n);
     noStroke();
-    if(_pos.x>=width)
-    {
-      _pos.x = width;
-    }
-    else if(_pos.x<=0)
-    {
-      _pos.x = 0;
-    }
-    if(_pos.y>=height)
-    {
-      _pos.y = height;
-    }
-    ellipse(_pos.x,_pos.y,_radius,_radius);
     
-    println("pos"+_pos.x);
-    
-   // ellipse(_pos.x,_pos.y,_radius,_radius);
-    popStyle();
+    ellipse(_pos.x,_pos.y,_radius,_radius);  
     }
-    
+    println("end_x"+end_x); //end的坐标是对的
    
+   popStyle();
+  
   }
   
-  void make(PVector parentVel)
-  {
-    PVector newVel = parentVel;
-    newVel.rotate(_rot);
-    newVel.setMag(_scl);
-    _vel = newVel;
-  }
-  
+
   PVector getVel()
   {
     return _vel;
@@ -126,27 +114,19 @@ class Particle
   void setVel(PVector v)
   {
     _vel = v;
+    _vel.x*=0.98f*_scl;
+    _vel.y*=0.98f*_scl; 
+    _vel.rotate(_rot);
+    println(_vel.x);
   }
   
    PVector getPos()
-  {
+  { 
     return _pos;
   }
   
   void setPos(PVector p)
   {
     _pos = p;
-  }
-  
-  void init(float radius,
-           float rotation,float scale,color c)
-  {
-    _radius=radius;
-    //_pos=pos;
-    //_vel=vel;
-    _rot=rotation;
-    _scl=scale;
-    _color = c;
-    
   }
 }

@@ -6,34 +6,47 @@ MyColorPicker cp;
 Timer timer;
 ControlWindow controlWindow;
 Particle mover;
-//FloatList  brush_pos;
+Particle endbrush;
 float[] brush_pos;
 FloatList  brushnew_pos;   //存储起始坐标，半径
 FloatList brushnew_color;    //存储颜色
+FloatList brushend_pos;
+FloatList coe;   //存储每一个画刷的系数
 
 boolean AddBrush = false;
 boolean randomBrush = true;
-//int time_addbrush = 0;
-//int time_randombrush = 1;
 
 boolean inside1 = false;
 boolean inside2 = false;
 
+boolean end = false;
+boolean update = false;
 float x,y;
 int press_time = 0;
 
 int starttime = 0;
 int savedTime;
 int _time;
- //SymmetricVelParticle mover;
+float _num; 
+float end_x;
+float end_y;
+PVector vel = new PVector();
+int num_brush = 0; //记录画刷数
+float rot;
+
+PVector end_ = new PVector();   //最后的点
 void setup() {
   size(600, 500);
+  frameRate(30);
   timer = new Timer();
   timer.start();
   //noStroke();
   brush_pos = new float[2];   //黑色，记录横纵坐标
   brushnew_pos = new FloatList();  //彩色位置
   brushnew_color = new FloatList();    //记录颜色
+  brushend_pos = new FloatList();  //记录最后到达的坐标
+  coe = new FloatList();  //系数
+  
   brush_pos[0]=(width/2);  //下标0
   brush_pos[1]=(height/2);  //是最初的
  // println(brush);
@@ -41,8 +54,13 @@ void setup() {
   background(255);
   x =width/2;
   y =height/2;
-  //x = pmouseX;
-  //y = pmouseY;
+  
+  for(int i =0;i<60;i++)
+   {
+     brushend_pos.set(i,0);
+   
+     
+   }
   gui();
 
 }
@@ -95,14 +113,7 @@ void gui()
      .setColorValue(color(0, 0, 0, 255))
      .setGroup(g1)
      ;
-   //cp5.addColorPicker("picker")
-   //         .setPosition(0, 3)   //x,y
-   //         .setColorValue(color(0, 0, 0, 255))
-   //         .moveTo(g1)
-   //         ;
-   
-      
-         
+ 
    cp5.addSlider("Rotation")   //rotation
       .setPosition(3,127)
       .setSize(170,15)
@@ -147,20 +158,16 @@ class MyColorPicker extends ColorPicker {
 {
 
     float  width, height;
-    //String label;
-    //float padx = 7;
-    
+   
     CheckBox ( String l, float ww, float hh )
     {
-       // label = l;
         width = ww; height = hh;
         Interactive.add( this );
     }
     
     void draw ()
     {
-       // noStroke();
-        //fill( color(16,78,139) );
+       
         color(16,78,139);
        // rect( x, y, width, height );
         line(3,20,3+width,20);
@@ -178,34 +185,21 @@ class MyColorPicker extends ColorPicker {
 }
 
 
-
-
 void mousePressed()
      {
-      
-       
        if(mouseX>3&&mouseX<3+13&&mouseY<20+13&&mouseY>20)
        {
          AddBrush = !AddBrush;
-         //inside1 = true;
-         println("1"+" "+AddBrush);
+       
        }
        
        
        if(mouseX>3&&mouseX<3+13&&mouseY<36+13&&mouseY>36)
        {
          randomBrush = !randomBrush;
-        // inside2 = true;
-         println("2"+" "+randomBrush);
-       }
        
-       if(mouseX>3&&mouseX<10&&mouseY<50&&mouseY>20)
-       {
-         //inside1 = !inside1;
-        // println("1"+" "+checked1);
        }
-      
-      
+        
        if(AddBrush)
        {
           color(16,78,139);
@@ -214,13 +208,14 @@ void mousePressed()
           line(4,21,4+11,21+12);
           line(4+11,21,3,21+12);
           popStyle();
+          _num = random(3,12);  //随机生成倍数关系
+         
        }
        else if(!AddBrush)
        {
           color(255);
           rect(3,20,14,14);
-         //line(3,20,3+13,20+13);
-         //line(3+13,20,3,20+13);
+        
        }
        
        if(randomBrush)
@@ -235,20 +230,17 @@ void mousePressed()
        else if(!randomBrush)
        {
           color(255);
-          //fill(color(255));
+         
           rect(3,36,13,18);
        
        }
        
        if(AddBrush)   //如果选中增加画刷
        {
-         float radius = cp5.getController("Radius").getValue();
-         float rot = cp5.getController("Rotation").getValue();
+         float radius = cp5.getController("Radius").getValue();       
          float scl = cp5.getController("Scale").getValue();
          color c = cp.getColorValue();
-         
-          //mover = new SymmetricVelParticle(scl);
-         
+         rot = cp5.getController("Rotation").getValue();
          if(randomBrush)
          {
            //println("yes");
@@ -257,7 +249,7 @@ void mousePressed()
             scl = random(-2,2);  //长度？
             c = color(random(255),random(255),
                      random(255),random(75,150));
-            println(alpha(c));
+           // println(alpha(c));
          }
            
             pushStyle();
@@ -265,12 +257,14 @@ void mousePressed()
             noStroke();
             smooth();
             if(mouseX>170||mouseY>180)
-            {
-              //Particle newBr;
-              //newBr = new Particle(radius,rot,scl,c);
-              //newBr.draw();
+            {     
               smooth();
-              ellipse(mouseX,mouseY,radius,radius);
+              num_brush++;
+              ellipse(mouseX,mouseY,radius,radius);        
+              float randomend_x = random(0,width);
+              float randomend_y = random(0,height);//随机生成到达的地方
+              float k1 = (randomend_y-mouseY)/120;
+              float k2 = (randomend_x-mouseX)/120;
               brushnew_pos.append(mouseX);
               brushnew_pos.append(mouseY);
               brushnew_pos.append(radius);
@@ -280,61 +274,58 @@ void mousePressed()
               brushnew_color.append(green(c));
               brushnew_color.append(blue(c));
               brushnew_color.append(alpha(c));
+              
+              coe.append(k1);
+              coe.append(k2);
+              
               //println(brushnew_pos);
-              //println(brushnew_color);
-              //println(alpha(c));
+              println("k1"+" "+k1);
+              println("k2"+" "+k2);
              
             }
-             
-        //
+
             popStyle();
   
         }
         
-          for(int i =0;i<brushnew_pos.size();i+=4)
-      {
-      
-        mover = new Particle(brushnew_pos.get(i),
-                             brushnew_pos.get(i+1),
-                             brushnew_pos.get(i+2),
-                         
-                             brushnew_color.get(i),
-                             brushnew_color.get(i+1),
-                             brushnew_color.get(i+2),
-                             brushnew_color.get(i+3),
-                             brushnew_pos.get(i+3)  //scl
-                             );
-        mover.getPos(); 
-        //mover.draw();                     
-       }
-       
- 
      }
 
 
   void mouseReleased()
   {
-    //redraw();
-    //x = ;
-    //y = mouseY;
     press_time = 0;
     //println(press_time);
     
     if(!AddBrush&&brushnew_pos.size()!=0)
     {
       //starttime ++;
-      timer.start();     
+      timer.start();     //计时开始
+      
+      if(end)
+      {
+     if(!update)
+     {
+       for(int i =0;i<brushnew_pos.size();i+=4)
+   {
+     brushend_pos.set(i/2,brushnew_pos.get(i)+coe.get(i/2)*15*_num/2);
+     brushend_pos.set(i/2+1,brushnew_pos.get(i+1)+coe.get(i/2+1)*15*_num);
+     
+   }
+     }
+   
+  // println(brushend_pos);
+      }
+      
     }
-    
+    println(brush_pos[0]);
   }
 
 
      void draw() {    //判断是否mousepressed不能写在draw函数中
  //background(255);   //这里如果background了，就不能打叉了
- //println(starttime);
-      // _time = timer.nowTime();
-       //println("t"+_time);
+ 
        _time = timer.nowTime();
+       
        pushStyle();
        noStroke();
        popStyle();
@@ -356,59 +347,61 @@ void mousePressed()
     if (mousePressed&&!AddBrush)    //两种情况
     {  
       press_time++;
-      //println(press_time);
+   
       if(press_time==1)
         {
          x = mouseX;
          y = mouseY;
         }
-     //x = mouse
-     //y = mouseY;
-     float dragspd = cp5.getController("DragSpeed").getValue();
+     
+       float dragspd = cp5.getController("DragSpeed").getValue();
     
-      x+=(mouseX - x)*dragspd/100;
-      y+=(mouseY - y)*dragspd/100;  
+       x+=(mouseX - x)*dragspd/100;
+       y+=(mouseY - y)*dragspd/100;  
        
-     pushStyle();
-     fill(0);
-    // ellipse(mouseX,mouseY,15,15);
-     if(mouseX>180||mouseY>180)
+       brush_pos[0]=x;
+       brush_pos[1]=y;  //获得了最新的黑色点的坐标
+       PVector offset = new PVector();
+       offset.x = mouseX - brush_pos[0];
+       offset.y = mouseY - brush_pos[1];
+      
+       vel.x = offset.x*dragspd;
+       vel.y = offset.y*dragspd;
+       //println("vel.x"+vel.x);
+       
+       
+       pushStyle();
+       fill(0);
+  
+     if(mouseX>30||mouseY>50)
      {
        
        ellipse(x,y,15,15);
-       
-     }
-       popStyle();
-    
-     
-       brush_pos[0]=x;
-       brush_pos[1]=y;  //获得了最新的黑色点的坐标
-      // println(brush_pos);
+      
+       if(brushnew_pos.size()!=0)  //按压
+       {
+         
+        for(int i =0;i<brushnew_pos.size();i+=4)
+      {
 
-    //for(int i =0;i<brushnew_pos.size();i+=4)
-    //  {
-      
-    //    mover = new Particle(brushnew_pos.get(i),
-    //                         brushnew_pos.get(i+1),
-    //                         brushnew_pos.get(i+2),
-                         
-    //                         brushnew_color.get(i),
-    //                         brushnew_color.get(i+1),
-    //                         brushnew_color.get(i+2),
-    //                         brushnew_color.get(i+3),
-    //                         brushnew_pos.get(i+3)  //scl
-    //                         );
-    //    mover.getPos(); 
-    //    //mover.draw();                     
-    //   }
+        mover.setVel(vel);
+        mover.update(i);
+       }  
+       }       
      }
-    else if(press_time==0&&!AddBrush&&brushnew_pos.size()!=0)
-    {
+     popStyle();
+   
+     }
+    else if(press_time==0&&!AddBrush&&brushnew_pos.size()!=0)  //释放画刷
+    {   
       
+       brush_pos[0]=x;
+       brush_pos[1]=y;
        for(int i =0;i<brushnew_pos.size();i+=4)
       {
-      
-        mover = new Particle(brushnew_pos.get(i),
+        rot = cp5.getController("Rotation").getValue();
+       
+          mover = new Particle(brushnew_pos.get(i),
                              brushnew_pos.get(i+1),
                              brushnew_pos.get(i+2),
                          
@@ -416,39 +409,20 @@ void mousePressed()
                              brushnew_color.get(i+1),
                              brushnew_color.get(i+2),
                              brushnew_color.get(i+3),
-                             brushnew_pos.get(i+3)  //scl
+                             brushnew_pos.get(i+3),  //scl
+                             _num,
+                             coe.get(i/2),
+                             coe.get(i/2+1),
+                             rot,
+                             brushend_pos.get(i/2),
+                             brushend_pos.get(i/2+1)
                              );
-        mover.getPos(); 
+        
+     
         mover.getTime(_time);
-        mover.draw();                     
+        mover.draw(); 
+        //mover.getPos(); 
        }  
        
-       
-       for(int i =0;i<brushnew_pos.size();i+=2)
-       {
-         //brushnew_pos.set(i,2);
-      // br//ushnew_pos.append(mouseY);
-       }
-       
-   
     }
-   
-
-}
-
-void getpos()
-{
-  
-}
-
-
-void update()
-{
-  // mover.draw();
-   //println(3);
-}
-
-void display()
-{
-  
 }
